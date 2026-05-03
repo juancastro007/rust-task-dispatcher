@@ -17,25 +17,26 @@ pub struct Task {
 }
 
 // Generate tasks with given IO ratio
-pub fn generate_tasks(total: usize, io_ratio: f64) -> Vec<Task> {
-    let mut rng = rand::thread_rng();
+pub fn generate_exact_tasks(io_count: usize, cpu_count: usize) -> Vec<Task> {
     let mut tasks = Vec::new();
 
-    for i in 0..total {
-        let is_io = rng.gen_bool(io_ratio);
-
-        let (kind, cpu_cost) = if is_io {
-            (TaskKind::IO, 10)
-        } else {
-            (TaskKind::CPU, 35)
-        };
-
+    for i in 0..io_count {
         tasks.push(Task {
             id: i,
             arrival_time: Instant::now(),
-            kind,
+            kind: TaskKind::IO,
             duration_ms: 200,
-            cpu_cost,
+            cpu_cost: 10,
+        });
+    }
+
+    for i in io_count..(io_count + cpu_count) {
+        tasks.push(Task {
+            id: i,
+            arrival_time: Instant::now(),
+            kind: TaskKind::CPU,
+            duration_ms: 200,
+            cpu_cost: 35,
         });
     }
 

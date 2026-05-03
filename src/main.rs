@@ -10,7 +10,7 @@ use monitor::start_monitor;
 use std::sync::{mpsc, Arc, Mutex};
 use std::thread;
 use std::time::{Duration, Instant};
-use task::generate_tasks;
+use task::generate_exact_tasks;
 use worker::start_worker_pool;
 
 fn main() {
@@ -18,12 +18,17 @@ fn main() {
 
     let simulation_start = Instant::now();
 
-    let tasks = generate_tasks(100, 0.7);
+    let tasks = generate_exact_tasks(700,300);
+    let total_tasks = 1000;
 
     let current_cpu = Arc::new(Mutex::new(0u32));
     let metrics = Arc::new(Mutex::new(Metrics::new()));
 
-    let monitor_handle = start_monitor(Arc::clone(&current_cpu));
+    let monitor_handle = start_monitor(
+    Arc::clone(&current_cpu),
+    Arc::clone(&metrics),
+    total_tasks,
+);
 
     let (task_sender, task_receiver) = mpsc::channel();
     let (worker_sender, worker_receiver) = mpsc::channel();
