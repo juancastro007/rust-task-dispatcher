@@ -4,7 +4,7 @@ mod worker;
 mod monitor;
 mod metrics;
 
-use dispatcher::run_fifo_dispatcher;
+use dispatcher::{run_fifo_dispatcher, run_optimized_dispatcher};
 use metrics::Metrics;
 use monitor::start_monitor;
 use std::sync::{mpsc, Arc, Mutex};
@@ -13,7 +13,7 @@ use std::time::{Duration, Instant};
 use task::generate_exact_tasks;
 use worker::start_worker_pool;
 
-fn run_simulation(name: &str, io_count: usize, cpu_count: usize) {
+fn run_simulation(name: &str, io_count: usize, cpu_count: usize, optimized: bool) {
     println!("\n========================================");
     println!("Starting simulation: {}", name);
     println!("IO tasks: {} | CPU tasks: {}", io_count, cpu_count);
@@ -47,9 +47,15 @@ fn run_simulation(name: &str, io_count: usize, cpu_count: usize) {
 
     let dispatcher_cpu = Arc::clone(&current_cpu);
 
-    let dispatcher_handle = thread::spawn(move || {
+    let dispatcher_handle = if optimized {
+    thread::spawn(move || {
+        run_optimized_dispatcher(task_receiver, worker_sender, dispatcher_cpu);
+    })
+} else {
+    thread::spawn(move || {
         run_fifo_dispatcher(task_receiver, worker_sender, dispatcher_cpu);
-    });
+    })
+};
 
     for mut task in tasks {
         task.arrival_time = Instant::now();
@@ -82,22 +88,30 @@ fn main() {
         println!("Choose a simulation:");
         println!("cargo run -- 700");
         println!("cargo run -- 800");
+        println!("cargo run -- opt700");
+        println!("cargo run -- opt800");
         println!("cargo run -- both");
         return;
     }
 
     match args[1].as_str() {
-        "700" => run_simulation("FIFO 700 IO / 300 CPU", 700, 300),
-        "800" => run_simulation("FIFO 800 IO / 200 CPU", 800, 200),
-        "both" => {
-            run_simulation("FIFO 700 IO / 300 CPU", 700, 300);
-            run_simulation("FIFO 800 IO / 200 CPU", 800, 200);
-        }
-        _ => {
-            println!("Invalid option.");
-            println!("Use: cargo run -- 700");
-            println!("Use: cargo run -- 800");
-            println!("Use: cargo run -- both");
-        }
+    "700" => run_simulation("FIFO 700 IO / 300 CPU", 700, 300, false),
+    "800" => run_simulation("FIFO 800 IO / 200 CPU", 800, 200, false),
+
+    "opt700" => run_simulation("OPT 700 IO / 300 CPU", 700, 300, true),
+    "opt800" => run_simulation("OPT 800 IO / 200 CPU", 800, 200, true),
+
+    "both" => {
+        run_simulation("FIFO 700 IO / 300 CPU", 700, 300, false);
+        run_simulation("OPT 700 IO / 300 CPU", 700, 300, true);
+    }
+
+    _ => {
+        println!("Use:");
+        println!("cargo run -- 700");
+        println!("cargo run -- 800");
+        println!("cargo run -- opt700");
+        println!("cargo run -- opt800");
+    }
     }
 }

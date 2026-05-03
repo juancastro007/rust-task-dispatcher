@@ -1,4 +1,3 @@
-use rand::Rng;
 use std::time::Instant;
 
 #[derive(Clone)]
