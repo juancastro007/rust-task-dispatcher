@@ -5,6 +5,7 @@ mod monitor;
 mod metrics;
 
 use dispatcher::run_fifo_dispatcher;
+use monitor::start_monitor;
 use std::sync::{mpsc, Arc, Mutex};
 use std::thread;
 use std::time::Duration;
@@ -17,6 +18,7 @@ fn main() {
     let tasks = generate_tasks(100, 0.7);
 
     let current_cpu = Arc::new(Mutex::new(0u32));
+    let monitor_handle = start_monitor(Arc::clone(&current_cpu));
 
     let (task_sender, task_receiver) = mpsc::channel();
     let (worker_sender, worker_receiver) = mpsc::channel();
@@ -47,6 +49,8 @@ fn main() {
     for handle in worker_handles {
         handle.join().unwrap();
     }
+
+    monitor_handle.join().unwrap();
 
     println!("Simulation complete.");
 }
