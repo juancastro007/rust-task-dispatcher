@@ -13,22 +13,25 @@ use std::time::{Duration, Instant};
 use task::generate_exact_tasks;
 use worker::start_worker_pool;
 
-fn main() {
-    println!("Task Dispatcher Simulation Starting...");
+fn run_simulation(name: &str, io_count: usize, cpu_count: usize) {
+    println!("\n========================================");
+    println!("Starting simulation: {}", name);
+    println!("IO tasks: {} | CPU tasks: {}", io_count, cpu_count);
+    println!("========================================");
 
     let simulation_start = Instant::now();
 
-    let tasks = generate_exact_tasks(700,300);
-    let total_tasks = 1000;
+    let total_tasks = io_count + cpu_count;
+    let tasks = generate_exact_tasks(io_count, cpu_count);
 
     let current_cpu = Arc::new(Mutex::new(0u32));
     let metrics = Arc::new(Mutex::new(Metrics::new()));
 
     let monitor_handle = start_monitor(
-    Arc::clone(&current_cpu),
-    Arc::clone(&metrics),
-    total_tasks,
-);
+        Arc::clone(&current_cpu),
+        Arc::clone(&metrics),
+        total_tasks,
+    );
 
     let (task_sender, task_receiver) = mpsc::channel();
     let (worker_sender, worker_receiver) = mpsc::channel();
@@ -69,5 +72,32 @@ fn main() {
     let final_metrics = metrics.lock().unwrap();
     final_metrics.print_summary(total_runtime_ms);
 
-    println!("Simulation complete.");
+    println!("Finished simulation: {}", name);
+}
+
+fn main() {
+    let args: Vec<String> = std::env::args().collect();
+
+    if args.len() < 2 {
+        println!("Choose a simulation:");
+        println!("cargo run -- 700");
+        println!("cargo run -- 800");
+        println!("cargo run -- both");
+        return;
+    }
+
+    match args[1].as_str() {
+        "700" => run_simulation("FIFO 700 IO / 300 CPU", 700, 300),
+        "800" => run_simulation("FIFO 800 IO / 200 CPU", 800, 200),
+        "both" => {
+            run_simulation("FIFO 700 IO / 300 CPU", 700, 300);
+            run_simulation("FIFO 800 IO / 200 CPU", 800, 200);
+        }
+        _ => {
+            println!("Invalid option.");
+            println!("Use: cargo run -- 700");
+            println!("Use: cargo run -- 800");
+            println!("Use: cargo run -- both");
+        }
+    }
 }
