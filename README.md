@@ -12,6 +12,9 @@ Tasks arrive over time and are dispatched to a **bounded worker pool (8 threads)
 
 ### Build
 ```bash
+
+cd /workspaces/rust-task-dispatcher/rust-task-dispatcher
+
 cargo build
 cargo run -- 700      # FIFO (700 IO / 300 CPU)
 cargo run -- 800      # FIFO (800 IO / 200 CPU)
